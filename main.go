@@ -1,5 +1,8 @@
 package main
 
+// TODO: Add timer determined by flag, default 30s
+// TODO: Store data in channel as needed
+
 import (
 	"encoding/csv"
 	"fmt"
