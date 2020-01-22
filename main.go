@@ -1,21 +1,21 @@
 package main
 
 // TODO: Add timer determined by flag, default 30s
-// TODO: Store data in channel as needed
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"strconv"
+	"time"
 )
 
 // to hold questions and their answer
 type question struct {
 	question string
-	answer   int
+	answer   string
 }
 
 // error checking shorthand function
@@ -45,44 +45,57 @@ func csvToQuestions(name string) []question {
 			log.Fatal(err)
 		}
 
-		// convert answer to int
-		answerInt, errInt := strconv.Atoi(record[1])
-		check(errInt)
-
-		data = append(data, question{record[0], answerInt})
+		data = append(data, question{record[0], record[1]})
 	}
 
 	return data
 }
 
+// Asks a question and parses response
 func askQuestion(q question) bool {
 	// print the question
 	fmt.Printf("%v = ", q.question)
-	var userString string
+	var userAnswer string
 
 	// get user input for the answer and conver to int
-	fmt.Scanln(&userString)
-	userAnswer, err := strconv.Atoi(userString)
-	if err != nil {
-		return false
-	}
+	fmt.Scanln(&userAnswer)
 
 	return userAnswer == q.answer
 }
 
 func main() {
+	// Set up and parse flags
+	filename := flag.String("f", "problems.csv", "csv filename for questions")
+	timeSeconds := flag.Int("t", 30, "time, in seconds for quiz to run")
+	flag.Parse()
 
 	score := 0
-	data := csvToQuestions("problems.csv")
+	data := csvToQuestions(*filename)
 
-	// will always run after quiz or timer
-	defer fmt.Printf("Game over! You scored %v/%v\n", score, len(data))
+	fmt.Print("Press Enter when you are ready to begin...")
+	fmt.Scanln()
+
+	timer := time.NewTimer(time.Duration(*timeSeconds) * time.Second)
+	finishedQuiz := make(chan bool)
 
 	// quiz loop
-	for _, data := range data {
-		if askQuestion(data) {
-			score++
+	go func() {
+		for _, data := range data {
+
+			if askQuestion(data) {
+				score++
+			}
 		}
+		finishedQuiz <- true
+	}()
+
+	// break on channel that fills up first
+	select {
+	case <-timer.C:
+	case <-finishedQuiz:
+		break
 	}
+
+	fmt.Printf("Game over! You scored %v/%v\n", score, len(data))
 
 }
