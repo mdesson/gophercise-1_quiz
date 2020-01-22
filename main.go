@@ -1,7 +1,5 @@
 package main
 
-// TODO: Add timer determined by flag, default 30s
-
 import (
 	"encoding/csv"
 	"flag"
@@ -71,12 +69,12 @@ func main() {
 
 	score := 0
 	data := csvToQuestions(*filename)
+	finishedQuiz := make(chan bool)
 
 	fmt.Print("Press Enter when you are ready to begin...")
 	fmt.Scanln()
 
 	timer := time.NewTimer(time.Duration(*timeSeconds) * time.Second)
-	finishedQuiz := make(chan bool)
 
 	// quiz loop
 	go func() {
